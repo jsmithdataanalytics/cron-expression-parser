@@ -10,6 +10,9 @@ Run `main.py` with a cron string as a command line argument. For example:
 
 ```python main.py "*/15 0 1,15 * 1-5 /usr/bin/find"```
 
+## Test
+```python test.py```
+
 ## Features
 This project defines a `CronExpression` class, which can be used to represent and expand cron expressions.
 
