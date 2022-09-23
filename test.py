@@ -62,6 +62,20 @@ class CronExpressionTestCase(unittest.TestCase):
             'command       do some stuff'
         )
 
+    def test_example_with_range_wrap_around(self):
+        c = CronExpression('0/10 12 5-12 jan/3 4-0 do some stuff')
+        output = c.print_expansion()
+
+        self.assertEqual(
+            output,
+            'minute        0 10 20 30 40 50\n'
+            'hour          12\n'
+            'day of month  5 6 7 8 9 10 11 12\n'
+            'month         1 4 7 10\n'
+            'day of week   0 4 5 6\n'
+            'command       do some stuff'
+        )
+
     def test_example_with_invalid_range(self):
         # ranges such as 5-3 are invalid because 3 is less than 5
         c = CronExpression('0/10 12 5-3 jan/3 mon-thu do some stuff')
