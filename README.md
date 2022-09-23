@@ -30,8 +30,12 @@ All standard cron features are supported. For example:
   - use of month aliases, e.g. `jan` or `DEC`
   - use of weekday aliases, e.g. `mon` or `FRI`
 
+For the day of week field, there is also support for "range wrap-around". For example:
+  - `5-1` is equivalent to `5,6,0,1`
+  - `sat-tue` is equivalent to `6,0,1,2`
+
 ### Unsupported features
-Non-standard cron syntax is not supported. For example:
+All other non-standard cron syntax is not supported. For example:
   - use of `@hourly` and similar shorthands
   - use of `7` for day of week
   - use of `L`, `W`, `#`, or `?`
