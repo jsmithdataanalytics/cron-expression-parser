@@ -70,7 +70,13 @@ class CronExpression:
         self._hour = self._expand_cron_field(fields[1], 0, 23)
         self._day_of_month = self._expand_cron_field(fields[2], 1, 31)
         self._month = self._expand_cron_field(fields[3], 1, 12, allow_month_aliases=True)
-        self._day_of_week = self._expand_cron_field(fields[4], 0, 6, allow_weekday_aliases=True)
+        self._day_of_week = self._expand_cron_field(
+            field=fields[4],
+            min_value=0,
+            max_value=6,
+            allow_weekday_aliases=True,
+            allow_range_wrap_around=True
+        )
 
         self._command = fields[5]
 
@@ -81,6 +87,7 @@ class CronExpression:
         max_value: int,
         allow_month_aliases: bool = False,
         allow_weekday_aliases: bool = False,
+        allow_range_wrap_around: bool = False,
     ) -> List[int]:
         """Expands a single cron field specification into a sorted list of integer values
         :param field: string representing a single cron field specification, e.g. "0-5"
@@ -88,6 +95,7 @@ class CronExpression:
         :param max_value: the highest valid value for the cron field, e.g. highest valid hour is 23
         :param allow_month_aliases: whether to allow use of month aliases in this field, e.g. "jan"
         :param allow_weekday_aliases: whether to allow use of weekday aliases in this field, e.g. "mon"
+        :param allow_range_wrap_around: whether to allow backward ranges, e.g. "5-1"
         """
 
         # normalise to lower case so that month and weekday aliases are case insensitive
@@ -120,17 +128,31 @@ class CronExpression:
             first_value = self._convert_literal_to_integer(field.split('-')[0])
             last_value = self._convert_literal_to_integer(field.split('-')[1])
 
+            is_first_value_bad = first_value < min_value or first_value > max_value
+            is_last_value_bad = last_value < min_value or last_value > max_value
+
+            if is_first_value_bad or is_last_value_bad:
+                raise ValueError(f'Invalid range specified: {field}')
+
             if first_value > last_value:
-                raise ValueError(f'Invalid range specified: [{first_value}, {last_value}]')
 
-            values = list(range(first_value, last_value + 1))
+                if not allow_range_wrap_around:
+                    raise ValueError(f'Invalid range specified: {field}')
 
-        # if slash syntax, expand
+                values = list(range(min_value, last_value + 1)) + list(range(first_value, max_value + 1))
+
+            else:
+                values = list(range(first_value, last_value + 1))
+
+        # if step value syntax, expand
         elif re.fullmatch(f'({literal}|\\*)/\\d+', field):
             # "*" in this context means start at minimum value
             field = field.replace('*', str(min_value))
             first_value = self._convert_literal_to_integer(field.split('/')[0])
             interval = int(field.split('/')[1])
+
+            if first_value < min_value or first_value > max_value:
+                raise ValueError(f'Invalid specification, initial value out of bounds: {field}')
 
             values = list(range(first_value, max_value + 1, interval))
 
@@ -152,7 +174,7 @@ class CronExpression:
     def _convert_literal_to_integer(self, literal: str) -> int:
         """Converts a literal into an integer value
         E.g. "005" -> 5
-        E.g. "feb" -> 1
+        E.g. "feb" -> 2
         E.g. "sat" -> 6
         """
         output = self._MONTH_ALIASES.get(literal, literal)
