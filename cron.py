@@ -113,7 +113,7 @@ class CronExpression:
             valid_literals += list(self._WEEKDAY_ALIASES.keys())
 
         # construct the literal regex
-        literal = f'({"|".join(valid_literals)})'
+        literal = f'({"|".join(valid_literals)})'  # for example, (\d+|jan|feb|...)
 
         # if "*", return full range
         if re.fullmatch('\\*', field):
